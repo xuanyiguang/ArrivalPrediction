@@ -74,4 +74,4 @@ if __name__ == "__main__":
         df = query_dbus_data_postgres(args.username, args.password, query_string)
         print "Query returns {} entries of data".format(len(df))
 
-        df.to_csv(pathname + csv_filename)
+        df.to_csv(pathname + csv_filename, index=False)
