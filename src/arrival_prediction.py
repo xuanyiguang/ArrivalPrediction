@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from src.query_dbus_data_postgres import construct_filename
 
-
+# TODO: add plots for stop location
 def plot_by_shape_id(proj_locations):
     unique_shape_id = proj_locations['shape_id'].unique()
     for shape_id in unique_shape_id:
