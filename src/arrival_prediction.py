@@ -6,12 +6,16 @@ def plot_postmile_vs_time_by_shape_id(proj_location):
     unique_shape_id = proj_location['shape_id'].unique()
     for shape_id in unique_shape_id:
         plt.figure()
-        plt.title("Shape id: {}".format(shape_id))
         proj_location_this_shape_id = proj_location[proj_location['shape_id'] == shape_id]
         unique_trip_id = proj_location_this_shape_id['trip_id'].unique()
         for trip_id in unique_trip_id:
             d = proj_location_this_shape_id[proj_location_this_shape_id['trip_id'] == trip_id]
+            plt.subplot(1,2,1)
+            plt.title("Postmile vs. Time for shape_id: {}".format(shape_id))
             plt.plot(d['time'], d['postmile'])
+            plt.subplot(1,2,2)
+            plt.title("Longitude vs. Latitude for shape_id: {}".format(shape_id))
+            plt.plot(d['longitude'], d['latitude'], 'bo-')
     plt.show()
 
 
