@@ -47,25 +47,11 @@ def prompt_for_yes_no(message, default="no"):
             return lookup_table[user_input]
 
 
-if __name__ == "__main__":
-
-    # config argument parser, obtain username and password from command line input
-    parser = argparse.ArgumentParser(description="Query Dbus data from postgres")
-    parser.add_argument("-u", "--username", dest="username", help="Username for DB", required=True)
-    parser.add_argument("-p", "--password", dest="password", help="Password for DB", required=True)
-    parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=35)
-    parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
-                        help="Epoch time (milliseconds) to start from", default=1404079200000)
-    # epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
-
-    args = parser.parse_args()
-
-    # input check
-    assert isinstance(args.days, int)
-    assert isinstance(args.starttime_ms, long)
-
-    number_of_days = args.days
-    starttime_ms = args.starttime_ms
+def download_proj_location_data(starttime_ms, number_of_days):
+    """
+    Download DBus projected location data
+    given start time (in milliseconds) and number of days
+    """
     pathname = "../dbusdata/"
     csv_filename = "dbus_proj_location_{starttime_s}_{days}days.csv".format(starttime_s=starttime_ms/1000, days=number_of_days)
 
@@ -91,3 +77,21 @@ if __name__ == "__main__":
         print "Query returns {} entries of data".format(len(df))
 
         df.to_csv(pathname + csv_filename, index=False)
+
+
+if __name__ == "__main__":
+
+    # config argument parser, obtain username and password from command line input
+    parser = argparse.ArgumentParser(description="Query Dbus data from postgres")
+    parser.add_argument("-u", "--username", dest="username", help="Username for DB", required=True)
+    parser.add_argument("-p", "--password", dest="password", help="Password for DB", required=True)
+    parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=35)
+    parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
+                        help="Epoch time (milliseconds) to start from", default=1404079200000)
+    # epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
+
+    args = parser.parse_args()
+
+    number_of_days = args.days
+    starttime_ms = args.starttime_ms
+    download_proj_location_data(starttime_ms, number_of_days)
