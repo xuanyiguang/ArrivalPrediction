@@ -11,10 +11,10 @@ def plot_by_shape_id(proj_locations):
         unique_trip_id = proj_locations_this_shape_id['trip_id'].unique()
         for trip_id in unique_trip_id:
             d = proj_locations_this_shape_id[proj_locations_this_shape_id['trip_id'] == trip_id]
-            plt.subplot(1,2,1)
+            plt.subplot(1, 2, 1)
             plt.title("Postmile vs. Time for shape_id: {}".format(shape_id))
             plt.plot(d['time'], d['postmile'])
-            plt.subplot(1,2,2)
+            plt.subplot(1, 2, 2)
             plt.title("Longitude vs. Latitude for shape_id: {}".format(shape_id))
             plt.plot(d['longitude'], d['latitude'], 'bo-')
     plt.show()
@@ -53,13 +53,14 @@ def match_location_pairs(proj_locations):
 
     # Not all adjacent rows correspond to location pairs
     # Filtering criteria:
-    #   - same trip_id
+    # - same trip_id
     #   - travel_time < 1 hour, to avoid pairing trip_id from different days
     #       (typically each trip_id is used at most once every day)
     # TODO: trip_id is treated as a number (OK for DBus data), but this is not generally true
-    row_valid = (matched_locations['travel_time'] < 1*3600*1000) & (matched_locations['trip_id'].diff() == 0)
+    row_valid = (matched_locations['travel_time'] < 1 * 3600 * 1000) & (matched_locations['trip_id'].diff() == 0)
     matched_locations = matched_locations[row_valid]
     return matched_locations
+
 
 def load_stop_sequence_data(starttime_ms):
     """
@@ -81,11 +82,28 @@ def load_stop_sequence_data(starttime_ms):
     return stop_sequences
 
 
+def load_event_data(starttime_ms, number_of_days):
+    event_filename = construct_filename(datatype="event", starttime_ms=starttime_ms, number_of_days=number_of_days)
+    events = pd.read_csv(event_filename)
+    print "Total number of rows: {}".format(len(events))
+
+    # input check
+    unique_trip_id = events['trip_id'].unique()
+    for trip_id in unique_trip_id:
+        events_this_trip_id = events[events['trip_id'] == trip_id]
+        if (events_this_trip_id['stop_sequence'].diff() < 0).any():
+            print "Events of trip {} are not in order!".format(trip_id)
+
+    return events
+
+
 if __name__ == "__main__":
-    number_of_days = 7
+    number_of_days = 1
     starttime_ms = 1404079200000
 
     proj_locations = load_proj_location_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
     matched_locations = match_location_pairs(proj_locations)
 
     stop_sequences = load_stop_sequence_data(starttime_ms=starttime_ms)
+
+    events = load_event_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
