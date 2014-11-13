@@ -94,6 +94,12 @@ def load_event_data(starttime_ms, number_of_days):
         if (events_this_trip_id['stop_sequence'].diff() < 0).any():
             print "Events of trip {} are not in order!".format(trip_id)
 
+    # TODO: data filtering
+    # When events data are sorted by trip_id and time, sometimes stop_sequence may not be in order
+    # For trips 06140005000208000401 and 06140005000209090102, there is an extra arrival at the first stop
+    # For trip 06140005000209550102, there are some duplicate events with the same trip_id but very different time
+    # To solve this, all events after arriving at the end of line should be removed
+
     return events
 
 
