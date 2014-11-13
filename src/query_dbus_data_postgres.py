@@ -89,9 +89,20 @@ if __name__ == "__main__":
     parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
                         help="Epoch time (milliseconds) to start from", default=1404079200000)
     # epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-pl", "--projected_location", action="store_true", help="Download projected location data")
+    group.add_argument("-sp", "--stop_postmile", action="store_true", help="Download stop postmile data")
+    group.add_argument("-e", "--event", action="store_true", help="Download event data")
 
     args = parser.parse_args()
 
-    number_of_days = args.days
     starttime_ms = args.starttime_ms
-    download_proj_location_data(starttime_ms, number_of_days)
+    number_of_days = args.days
+    if args.projected_location:
+        download_proj_location_data(starttime_ms, number_of_days)
+    elif args.stop_postmile:
+        # download stop postmile data
+        pass
+    elif args.event:
+        # download event data
+        pass
