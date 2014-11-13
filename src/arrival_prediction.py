@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def plot_postmile_vs_time_by_shape_id(proj_locations):
+def plot_by_shape_id(proj_locations):
     unique_shape_id = proj_locations['shape_id'].unique()
     for shape_id in unique_shape_id:
         plt.figure()
@@ -19,7 +19,30 @@ def plot_postmile_vs_time_by_shape_id(proj_locations):
     plt.show()
 
 
+def load_proj_location_data(pathname, starttime_s, number_of_days):
+    """
+    Load projected location data and check input
+    """
+    proj_location_filename = "dbus_proj_location_{starttime_s}_{days}days.csv"\
+        .format(starttime_s=starttime_s, days=number_of_days)
+    proj_locations = pd.read_csv(pathname + proj_location_filename)
+    print "Total number of rows: {}".format(len(proj_locations))
+
+    # Input check: eliminate duplication in data (only using columns time and trip_id)
+    if proj_locations.duplicated(['time', 'trip_id']).any():
+        proj_locations.drop_duplicates(['time', 'trip_id'], inplace=True)
+        print "Duplicates removed, now {} rows".format(len(proj_locations))
+
+    # # plot for different shape_id
+    # plot_by_shape_id(proj_locations)
+
+    return proj_locations
+
+
 def match_location_pairs(proj_locations):
+    """
+    Match consecutive location pairs to get travel time and distance
+    """
     # copy a subset of fields for future use
     matched_locations = proj_locations[['time', 'postmile', 'trip_id', 'shape_id', 'route_short_name']]
 
@@ -37,24 +60,33 @@ def match_location_pairs(proj_locations):
     matched_locations = matched_locations[row_valid]
     return matched_locations
 
+def load_stop_sequence_data(pathname, starttime_s):
+    """
+    Get postmiles of stops sorted by shape_id
+    """
+    stop_sequence_filename = "dbus_stop_sequence_{starttime_s}.csv"\
+        .format(starttime_s=starttime_s)
+    stop_sequences = pd.read_csv(pathname + stop_sequence_filename)
+    print "Total number of rows: {}".format(len(stop_sequences))
+
+    # input check
+    unique_shape_id = stop_sequences['shape_id'].unique()
+    for shape_id in unique_shape_id:
+        stop_sequences_this_shape_id = stop_sequences[stop_sequences['shape_id'] == shape_id]
+        if (stop_sequences_this_shape_id['stop_sequence'].diff() < 0).any():
+            print "Stop sequences of shape {} are not in order!".format(shape_id)
+        if (stop_sequences_this_shape_id['shape_dist_traveled'].diff() < 0).any():
+            print "Stop postmiles of shape {} are not in order!".format(shape_id)
+
+    return stop_sequences
+
+
 if __name__ == "__main__":
     number_of_days = 7
     starttime_s = 1404079200
     pathname = "../dbusdata/"
-    csv_filename = "dbus_proj_location_{starttime_s}_{days}days.csv"\
-        .format(starttime_s=starttime_s, days=number_of_days)
-    proj_locations = pd.read_csv(pathname + csv_filename)
-    print "Total number of rows: {}".format(len(proj_locations))
 
-    # Input check: eliminate duplication in data (only using columns time and trip_id)
-    if proj_locations.duplicated(['time', 'trip_id']).any():
-        proj_locations.drop_duplicates(['time', 'trip_id'], inplace=True)
-        print "Duplicates removed, now {} rows".format(len(proj_locations))
-
-    # # plot postmile vs. time for different shape_id
-    # plot_postmile_vs_time_by_shape_id(proj_location)
-
-    # matching consecutive locations to get travel time
+    proj_locations = load_proj_location_data(pathname, starttime_s, number_of_days)
     matched_locations = match_location_pairs(proj_locations)
 
-    # TODO: get postmiles of stops for given shape_id
+    stop_sequences = load_stop_sequence_data(pathname, starttime_s)
