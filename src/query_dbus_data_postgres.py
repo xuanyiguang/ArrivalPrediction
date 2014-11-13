@@ -47,36 +47,31 @@ def prompt_for_yes_no(message, default="no"):
             return lookup_table[user_input]
 
 
-def download_proj_location_data(starttime_ms, number_of_days):
+def file_does_not_exist(filename):
+    return not os.path.isfile(filename)
+
+
+def overwrite_file(filename):
+    return prompt_for_yes_no("File {} already exists. Overwrite?".format(filename))
+
+
+def construct_query_proj_location(starttime_ms, number_of_days):
     """
-    Download DBus projected location data
+    Construct query string for DBus projected location data
     given start time (in milliseconds) and number of days
     """
-    pathname = "../dbusdata/"
-    csv_filename = "dbus_proj_location_{starttime_s}_{days}days.csv".format(starttime_s=starttime_ms/1000, days=number_of_days)
-
-    if os.path.isfile(pathname + csv_filename):
-        flag_overwrite = prompt_for_yes_no("File already exists. Overwrite?")
-    else:
-        flag_overwrite = True
-
-    if flag_overwrite:
-        query_string = "SELECT p.device_id, p.time, p.latitude, p.longitude, p.speed, p.bearing, p.accuracy, " \
-                       "p.postmile, p.trip_id, t.shape_id, r.route_short_name, p.driver_id, p.bus_id, p.dt, p.delay " \
-                       "FROM projected_location p " \
-                       "JOIN gtfs_trips_history t on t.trip_id = p.trip_id " \
-                       "JOIN gtfs_routes_history r on t.route_id = r.route_id " \
-                       "WHERE p.time >= {starttime_ms}::bigint " \
-                       "and p.time < {starttime_ms}::bigint + {days}*24*3600000::bigint " \
-                       "and r.t_range @> to_timestamp('{starttime_s}') " \
-                       "and t.t_range @> to_timestamp('{starttime_s}') " \
-                       "ORDER BY p.trip_id, p.time " \
-                       .format(starttime_ms=starttime_ms, starttime_s=starttime_ms/1000, days=number_of_days)
-
-        df = query_dbus_data_postgres(args.username, args.password, query_string)
-        print "Query returns {} entries of data".format(len(df))
-
-        df.to_csv(pathname + csv_filename, index=False)
+    query_string = "SELECT p.device_id, p.time, p.latitude, p.longitude, p.speed, p.bearing, p.accuracy, " \
+                   "p.postmile, p.trip_id, t.shape_id, r.route_short_name, p.driver_id, p.bus_id, p.dt, p.delay " \
+                   "FROM projected_location p " \
+                   "JOIN gtfs_trips_history t on t.trip_id = p.trip_id " \
+                   "JOIN gtfs_routes_history r on t.route_id = r.route_id " \
+                   "WHERE p.time >= {starttime_ms}::bigint " \
+                   "and p.time < {starttime_ms}::bigint + {days}*24*3600000::bigint " \
+                   "and r.t_range @> to_timestamp('{starttime_s}') " \
+                   "and t.t_range @> to_timestamp('{starttime_s}') " \
+                   "ORDER BY p.trip_id, p.time " \
+                   .format(starttime_ms=starttime_ms, starttime_s=starttime_ms/1000, days=number_of_days)
+    return query_string
 
 
 if __name__ == "__main__":
@@ -88,21 +83,40 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=35)
     parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
                         help="Epoch time (milliseconds) to start from", default=1404079200000)
-    # epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
+    # default epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-pl", "--projected_location", action="store_true", help="Download projected location data")
-    group.add_argument("-sp", "--stop_postmile", action="store_true", help="Download stop postmile data")
+    group.add_argument("-ss", "--stop_sequence", action="store_true", help="Download stop sequence data")
     group.add_argument("-e", "--event", action="store_true", help="Download event data")
 
     args = parser.parse_args()
 
     starttime_ms = args.starttime_ms
     number_of_days = args.days
+    pathname = "../dbusdata/"
+    # set filename
     if args.projected_location:
-        download_proj_location_data(starttime_ms, number_of_days)
-    elif args.stop_postmile:
-        # download stop postmile data
-        pass
+        csv_filename = "dbus_proj_location_{starttime_s}_{days}days.csv"\
+            .format(starttime_s=starttime_ms/1000, days=number_of_days)
+    elif args.stop_sequence:
+        csv_filename = "dbus_stop_sequence_{starttime_s}.csv"\
+            .format(starttime_s=starttime_ms/1000)
     elif args.event:
-        # download event data
-        pass
+        csv_filename = "dbus_event_{starttime_s}_{days}days.csv"\
+            .format(starttime_s=starttime_ms/1000, days=number_of_days)
+
+    if file_does_not_exist(pathname + csv_filename) or overwrite_file(pathname + csv_filename):
+        # prepare query_string
+        if args.projected_location:
+            query_string = construct_query_proj_location(starttime_ms, number_of_days)
+        elif args.stop_sequence:
+            pass
+        elif args.event:
+            pass
+
+        # query
+        df = query_dbus_data_postgres(args.username, args.password, query_string)
+        print "Query returns {} entries of data".format(len(df))
+
+        # save
+        df.to_csv(pathname + csv_filename, index=False)
