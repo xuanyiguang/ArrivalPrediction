@@ -89,6 +89,24 @@ def construct_query_stop_sequence(starttime_ms):
     return query_string
 
 
+def construct_query_event(starttime_ms, number_of_days):
+    """
+    Construct query string for DBus event data
+    given start time (in milliseconds) and number of days
+    """
+    query_string = "SELECT e.type, e.stop_id, e.stop_sequence, e.time, e.trip_id, t.shape_id " \
+                   "FROM event e " \
+                   "JOIN gtfs_trips_history t ON t.trip_id = e.trip_id " \
+                   "JOIN gtfs_routes_history r on t.route_id = r.route_id " \
+                   "WHERE e.time >= {starttime_ms}::bigint " \
+                   "and e.time < {starttime_ms}::bigint + {days}*24*3600000::bigint " \
+                   "and t.t_range @> to_timestamp('{starttime_s}') " \
+                   "and  r.t_range @> to_timestamp('{starttime_s}') " \
+                   "ORDER BY trip_id, time " \
+                   .format(starttime_ms=starttime_ms, starttime_s=starttime_ms/1000, days=number_of_days)
+    return query_string
+
+
 def construct_filename(datatype, starttime_ms=1404079200000, number_of_days=35):
     """
     Unified file naming
@@ -119,16 +137,16 @@ if __name__ == "__main__":
 
     starttime_ms = args.starttime_ms
     number_of_days = args.days
-    csv_filename = construct_filename(args.datatype, starttime_ms, number_of_days)
+    csv_filename = construct_filename(datatype=args.datatype, starttime_ms=starttime_ms, number_of_days=number_of_days)
 
     if file_does_not_exist(csv_filename) or overwrite_file(csv_filename):
         # prepare query_string
         if args.datatype == "proj_location":
-            query_string = construct_query_proj_location(starttime_ms, number_of_days)
+            query_string = construct_query_proj_location(starttime_ms=starttime_ms, number_of_days=number_of_days)
         elif args.datatype == "stop_sequence":
-            query_string = construct_query_stop_sequence(starttime_ms)
+            query_string = construct_query_stop_sequence(starttime_ms=starttime_ms)
         elif args.datatype == "event":
-            pass
+            query_string = construct_query_event(starttime_ms=starttime_ms, number_of_days=number_of_days)
 
         # query
         df = query_dbus_data_postgres(args.username, args.password, query_string)
