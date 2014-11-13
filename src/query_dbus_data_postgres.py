@@ -53,8 +53,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Query Dbus data from postgres")
     parser.add_argument("-u", "--username", dest="username", help="Username for DB", required=True)
     parser.add_argument("-p", "--password", dest="password", help="Password for DB", required=True)
-    parser.add_argument("-d", "--days", dest="days", help="Number of days to download", default=35)
-    parser.add_argument("-st", "--starttime", dest="starttime_ms",
+    parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=35)
+    parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
                         help="Epoch time (milliseconds) to start from", default=1404079200000)
     # epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
 
