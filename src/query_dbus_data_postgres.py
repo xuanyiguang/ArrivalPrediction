@@ -74,6 +74,21 @@ def construct_query_proj_location(starttime_ms, number_of_days):
     return query_string
 
 
+def construct_query_stop_sequence(starttime_ms):
+    """
+    Construct query string for DBus stop sequence data
+    given start time (in milliseconds)
+    """
+    query_string = "SELECT DISTINCT t.shape_id, st.stop_id, st.stop_sequence, st.shape_dist_traveled " \
+                   "FROM gtfs_stop_times_history st " \
+                   "JOIN gtfs_trips_history t ON t.trip_id = st.trip_id " \
+                   "WHERE st.t_range @> to_timestamp('{starttime_s}') " \
+                   "and t.t_range @> to_timestamp('{starttime_s}') " \
+                   "ORDER BY t.shape_id, st.stop_sequence " \
+                   .format(starttime_s=starttime_ms/1000)
+    return query_string
+
+
 if __name__ == "__main__":
 
     # config argument parser, obtain username and password from command line input
@@ -110,7 +125,7 @@ if __name__ == "__main__":
         if args.projected_location:
             query_string = construct_query_proj_location(starttime_ms, number_of_days)
         elif args.stop_sequence:
-            pass
+            query_string = construct_query_stop_sequence(starttime_ms)
         elif args.event:
             pass
 
