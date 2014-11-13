@@ -89,16 +89,17 @@ def construct_query_stop_sequence(starttime_ms):
     return query_string
 
 
-def construct_filename(datatype, starttime_ms, number_of_days):
+def construct_filename(datatype, starttime_ms=1404079200000, number_of_days=35):
     """
     Unified file naming
     """
+    pathname = "../dbusdata/"
     if datatype == "proj_location" or datatype == "event":
-        return "dbus_{datatype}_{starttime_s}_{days}days.csv"\
-            .format(datatype=datatype, starttime_s=starttime_ms/1000, days=number_of_days)
+        return "{pathname}dbus_{datatype}_{starttime_s}_{days}days.csv"\
+            .format(pathname=pathname, datatype=datatype, starttime_s=starttime_ms/1000, days=number_of_days)
     elif datatype == "stop_sequence":
-        return "dbus_{datatype}_{starttime_s}.csv"\
-            .format(datatype=datatype, starttime_s=starttime_ms/1000)
+        return "{pathname}dbus_{datatype}_{starttime_s}.csv"\
+            .format(pathname=pathname, datatype=datatype, starttime_s=starttime_ms/1000)
 
 
 if __name__ == "__main__":
@@ -118,10 +119,9 @@ if __name__ == "__main__":
 
     starttime_ms = args.starttime_ms
     number_of_days = args.days
-    pathname = "../dbusdata/"
     csv_filename = construct_filename(args.datatype, starttime_ms, number_of_days)
 
-    if file_does_not_exist(pathname + csv_filename) or overwrite_file(pathname + csv_filename):
+    if file_does_not_exist(csv_filename) or overwrite_file(csv_filename):
         # prepare query_string
         if args.datatype == "proj_location":
             query_string = construct_query_proj_location(starttime_ms, number_of_days)
@@ -135,4 +135,4 @@ if __name__ == "__main__":
         print "Query returns {} entries of data".format(len(df))
 
         # save
-        df.to_csv(pathname + csv_filename, index=False)
+        df.to_csv(csv_filename, index=False)

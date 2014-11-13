@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from src.query_dbus_data_postgres import construct_filename
 
 
 def plot_by_shape_id(proj_locations):
@@ -19,13 +20,13 @@ def plot_by_shape_id(proj_locations):
     plt.show()
 
 
-def load_proj_location_data(pathname, starttime_s, number_of_days):
+def load_proj_location_data(starttime_ms, number_of_days):
     """
     Load projected location data and check input
     """
-    proj_location_filename = "dbus_proj_location_{starttime_s}_{days}days.csv"\
-        .format(starttime_s=starttime_s, days=number_of_days)
-    proj_locations = pd.read_csv(pathname + proj_location_filename)
+    proj_location_filename = construct_filename(datatype="proj_location",
+                                                starttime_ms=starttime_ms, number_of_days=number_of_days)
+    proj_locations = pd.read_csv(proj_location_filename)
     print "Total number of rows: {}".format(len(proj_locations))
 
     # Input check: eliminate duplication in data (only using columns time and trip_id)
@@ -60,13 +61,12 @@ def match_location_pairs(proj_locations):
     matched_locations = matched_locations[row_valid]
     return matched_locations
 
-def load_stop_sequence_data(pathname, starttime_s):
+def load_stop_sequence_data(starttime_ms):
     """
     Get postmiles of stops sorted by shape_id
     """
-    stop_sequence_filename = "dbus_stop_sequence_{starttime_s}.csv"\
-        .format(starttime_s=starttime_s)
-    stop_sequences = pd.read_csv(pathname + stop_sequence_filename)
+    stop_sequence_filename = construct_filename(datatype="stop_sequence", starttime_ms=starttime_ms)
+    stop_sequences = pd.read_csv(stop_sequence_filename)
     print "Total number of rows: {}".format(len(stop_sequences))
 
     # input check
@@ -83,10 +83,9 @@ def load_stop_sequence_data(pathname, starttime_s):
 
 if __name__ == "__main__":
     number_of_days = 7
-    starttime_s = 1404079200
-    pathname = "../dbusdata/"
+    starttime_ms = 1404079200000
 
-    proj_locations = load_proj_location_data(pathname, starttime_s, number_of_days)
+    proj_locations = load_proj_location_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
     matched_locations = match_location_pairs(proj_locations)
 
-    stop_sequences = load_stop_sequence_data(pathname, starttime_s)
+    stop_sequences = load_stop_sequence_data(starttime_ms=starttime_ms)
