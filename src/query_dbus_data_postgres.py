@@ -94,7 +94,7 @@ def construct_query_event(starttime_ms, number_of_days):
     Construct query string for DBus event data
     given start time (in milliseconds) and number of days
     """
-    query_string = "SELECT e.type, e.stop_id, e.stop_sequence, e.time, e.trip_id, t.shape_id " \
+    query_string = "SELECT e.type, e.stop_id, e.stop_sequence, e.stop_postmile, e.time, e.trip_id, t.shape_id " \
                    "FROM event e " \
                    "JOIN gtfs_trips_history t ON t.trip_id = e.trip_id " \
                    "JOIN gtfs_routes_history r on t.route_id = r.route_id " \
@@ -147,6 +147,8 @@ if __name__ == "__main__":
             query_string = construct_query_stop_sequence(starttime_ms=starttime_ms)
         elif args.datatype == "event":
             query_string = construct_query_event(starttime_ms=starttime_ms, number_of_days=number_of_days)
+        else:
+            print "Should not happen because of argument parser setting"
 
         # query
         df = query_dbus_data_postgres(args.username, args.password, query_string)
