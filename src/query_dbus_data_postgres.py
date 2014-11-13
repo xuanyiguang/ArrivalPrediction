@@ -89,44 +89,45 @@ def construct_query_stop_sequence(starttime_ms):
     return query_string
 
 
+def construct_filename(datatype, starttime_ms, number_of_days):
+    """
+    Unified file naming
+    """
+    if datatype == "proj_location" or datatype == "event":
+        return "dbus_{datatype}_{starttime_s}_{days}days.csv"\
+            .format(datatype=datatype, starttime_s=starttime_ms/1000, days=number_of_days)
+    elif datatype == "stop_sequence":
+        return "dbus_{datatype}_{starttime_s}.csv"\
+            .format(datatype=datatype, starttime_s=starttime_ms/1000)
+
+
 if __name__ == "__main__":
 
     # config argument parser, obtain username and password from command line input
     parser = argparse.ArgumentParser(description="Query Dbus data from postgres")
     parser.add_argument("-u", "--username", dest="username", help="Username for DB", required=True)
     parser.add_argument("-p", "--password", dest="password", help="Password for DB", required=True)
+    parser.add_argument("-t", "--datatype", choices=["proj_location", "stop_sequence", "event"], type=str,
+                        help="The type of data to download")
     parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=35)
     parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
                         help="Epoch time (milliseconds) to start from", default=1404079200000)
     # default epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-pl", "--projected_location", action="store_true", help="Download projected location data")
-    group.add_argument("-ss", "--stop_sequence", action="store_true", help="Download stop sequence data")
-    group.add_argument("-e", "--event", action="store_true", help="Download event data")
 
     args = parser.parse_args()
 
     starttime_ms = args.starttime_ms
     number_of_days = args.days
     pathname = "../dbusdata/"
-    # set filename
-    if args.projected_location:
-        csv_filename = "dbus_proj_location_{starttime_s}_{days}days.csv"\
-            .format(starttime_s=starttime_ms/1000, days=number_of_days)
-    elif args.stop_sequence:
-        csv_filename = "dbus_stop_sequence_{starttime_s}.csv"\
-            .format(starttime_s=starttime_ms/1000)
-    elif args.event:
-        csv_filename = "dbus_event_{starttime_s}_{days}days.csv"\
-            .format(starttime_s=starttime_ms/1000, days=number_of_days)
+    csv_filename = construct_filename(args.datatype, starttime_ms, number_of_days)
 
     if file_does_not_exist(pathname + csv_filename) or overwrite_file(pathname + csv_filename):
         # prepare query_string
-        if args.projected_location:
+        if args.datatype == "proj_location":
             query_string = construct_query_proj_location(starttime_ms, number_of_days)
-        elif args.stop_sequence:
+        elif args.datatype == "stop_sequence":
             query_string = construct_query_stop_sequence(starttime_ms)
-        elif args.event:
+        elif args.datatype == "event":
             pass
 
         # query
