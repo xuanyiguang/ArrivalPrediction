@@ -53,7 +53,7 @@ def match_location_pairs(proj_locations):
 
     # Not all adjacent rows correspond to location pairs
     # Filtering criteria:
-    # - same trip_id
+    #   - same trip_id
     #   - travel_time < 1 hour, to avoid pairing trip_id from different days
     #       (typically each trip_id is used at most once every day)
     # TODO: trip_id is treated as a number (OK for DBus data), but this is not generally true
@@ -113,3 +113,13 @@ if __name__ == "__main__":
     stop_sequences = load_stop_sequence_data(starttime_ms=starttime_ms)
 
     events = load_event_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
+
+    # Training (with training data)
+    #   - Benchmark: propagate delay downstream (no training required)
+    #   - Algorithm 1: assume uniform speed between locations
+    #   - Algorithm 2: assume travel times are independent distributions, use Expectation Maximization ...
+
+    # Predicting (with validation data)
+    #   - Prediction is carried out when new location is received
+    #   - It is possible to carry out prediction on a regular interval, but it is only a matter of extrapolation
+    #       with no new information. Will do this later.
