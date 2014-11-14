@@ -2,21 +2,39 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from src.query_dbus_data_postgres import construct_filename
 
-# TODO: add plots for stop location
-def plot_by_shape_id(proj_locations):
+
+def plot_by_shape_id(proj_locations, stop_sequences=None):
+    """
+    Plot the following by shape_id, using information in proj_locations:
+        - postmile vs. time
+        - longitude vs. latitude
+    If stop_sequences is further provided:
+        - stop postmiles are added to the first subplot
+        - stop locations are added to the second subplot
+    """
     unique_shape_id = proj_locations['shape_id'].unique()
     for shape_id in unique_shape_id:
         plt.figure()
+
         proj_locations_this_shape_id = proj_locations[proj_locations['shape_id'] == shape_id]
         unique_trip_id = proj_locations_this_shape_id['trip_id'].unique()
         for trip_id in unique_trip_id:
-            d = proj_locations_this_shape_id[proj_locations_this_shape_id['trip_id'] == trip_id]
+            proj_locations_this_trip_id = proj_locations_this_shape_id[proj_locations_this_shape_id['trip_id'] == trip_id]
             plt.subplot(1, 2, 1)
             plt.title("Postmile vs. Time for shape_id: {}".format(shape_id))
-            plt.plot(d['time'], d['postmile'])
+            plt.plot(proj_locations_this_trip_id['time'], proj_locations_this_trip_id['postmile'])
             plt.subplot(1, 2, 2)
             plt.title("Longitude vs. Latitude for shape_id: {}".format(shape_id))
-            plt.plot(d['longitude'], d['latitude'], 'bo-')
+            plt.plot(proj_locations_this_trip_id['longitude'], proj_locations_this_trip_id['latitude'], 'bo-')
+
+        if stop_sequences is not None:
+            stop_sequences_this_shape_id = stop_sequences[stop_sequences['shape_id'] == shape_id]
+            plt.subplot(1, 2, 1)
+            for postmile in stop_sequences_this_shape_id['shape_dist_traveled']:
+                plt.axhline(y=postmile, linestyle=":")
+            plt.subplot(1, 2, 2)
+            plt.plot(stop_sequences_this_shape_id['stop_lon'], stop_sequences_this_shape_id['stop_lat'], 'rs')
+
     plt.show()
 
 
@@ -33,9 +51,6 @@ def load_proj_location_data(starttime_ms, number_of_days):
     if proj_locations.duplicated(['time', 'trip_id']).any():
         proj_locations.drop_duplicates(['time', 'trip_id'], inplace=True)
         print "Duplicates removed, now {} rows".format(len(proj_locations))
-
-    # # plot for different shape_id
-    # plot_by_shape_id(proj_locations)
 
     return proj_locations
 
@@ -113,6 +128,9 @@ if __name__ == "__main__":
     stop_sequences = load_stop_sequence_data(starttime_ms=starttime_ms)
 
     events = load_event_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
+
+    plot_by_shape_id(proj_locations=proj_locations, stop_sequences=stop_sequences)
+
 
     # Training (with training data)
     #   - Benchmark: propagate delay downstream (no training required)
