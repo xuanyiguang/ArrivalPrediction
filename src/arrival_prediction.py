@@ -123,13 +123,13 @@ if __name__ == "__main__":
     starttime_ms = 1404079200000
 
     proj_locations = load_proj_location_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
-    matched_locations = match_location_pairs(proj_locations)
+    # matched_locations = match_location_pairs(proj_locations)
 
     stop_sequences = load_stop_sequence_data(starttime_ms=starttime_ms)
 
     events = load_event_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
 
-    plot_by_shape_id(proj_locations=proj_locations, stop_sequences=stop_sequences)
+    # plot_by_shape_id(proj_locations=proj_locations, stop_sequences=stop_sequences)
 
 
     # Training (with training data)
@@ -138,6 +138,32 @@ if __name__ == "__main__":
     #   - Algorithm 2: assume travel times are independent distributions, use Expectation Maximization ...
 
     # Predicting (with validation data)
-    #   - Prediction is carried out when new location is received
+    #   - Prediction is carried out when new location is received, for all the downstream stops
     #   - It is possible to carry out prediction on a regular interval, but it is only a matter of extrapolation
     #       with no new information. Will do this later.
+
+    # Sort proj_locations in the order of time
+    proj_locations.sort(columns='time', inplace=True)
+
+    # for each new location that becomes available, do prediction
+    for location_index in range(len(proj_locations)):
+        location_shape_id = proj_locations.ix[location_index, 'shape_id']
+        location_postmile = proj_locations.ix[location_index, 'postmile']
+
+        # Find all stops of the same shape_id and larger postmile
+        selected_stop_index = (stop_sequences['shape_id'] == location_shape_id) & \
+                     (stop_sequences['shape_dist_traveled'] >= location_postmile)
+        # TODO: rename stop_sequences to stops or sequenced_stops
+        selected_stop_sequences = stop_sequences[selected_stop_index]
+
+        # for each selected stop, predict arrival time
+        for stop_index in range(len(selected_stop_sequences)):
+            # TODO: query DB for arrival time (in local time with no date) and adjust to epoch time
+            # SELECT arrival_time, stop_id, stop_sequence
+            # FROM gtfs_stop_times_history
+            # WHERE trip_id = '06140005000107090401'
+            # and t_range @> to_timestamp('1404079200')
+            # --and stop_id = '240'
+            # TODO: then plus the delay to get predicted arrival time
+            # TODO: need to understand the sign of delay (+ for late and - for early?)
+            pass
