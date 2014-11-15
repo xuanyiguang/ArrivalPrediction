@@ -129,7 +129,7 @@ def construct_query_stop_times(starttime_ms):
     return query_string
 
 
-def construct_filename(datatype, starttime_ms=1404079200000, number_of_days=35):
+def construct_filename(datatype, starttime_ms=1404079200000, number_of_days=1):
     """
     Unified file naming
     """
