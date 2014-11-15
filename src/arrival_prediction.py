@@ -122,9 +122,11 @@ def load_stop_times_data(starttime_ms):
     """
     Get arrival time at stops (in local time) sorted by trip_id
     """
-    stops_filename = construct_filename(datatype="stop_times", starttime_ms=starttime_ms)
-    stops = pd.read_csv(stops_filename)
-    print "Total number of sequenced stops: {}".format(len(stops))
+    stop_times_filename = construct_filename(datatype="stop_times", starttime_ms=starttime_ms)
+    stop_times = pd.read_csv(stop_times_filename)
+    print "Total number of stop times: {}".format(len(stop_times))
+
+    return stop_times
 
 
 if __name__ == "__main__":
