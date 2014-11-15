@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 from src.query_dbus_data_postgres import construct_filename
 
 
-def plot_by_shape_id(proj_locations, stop_sequences=None):
+def plot_by_shape_id(proj_locations, stops=None):
     """
     Plot the following by shape_id, using information in proj_locations:
         - postmile vs. time
         - longitude vs. latitude
-    If stop_sequences is further provided:
+    If stops is further provided:
         - stop postmiles are added to the first subplot
         - stop locations are added to the second subplot
     """
@@ -27,30 +27,30 @@ def plot_by_shape_id(proj_locations, stop_sequences=None):
             plt.title("Longitude vs. Latitude for shape_id: {}".format(shape_id))
             plt.plot(proj_locations_this_trip_id['longitude'], proj_locations_this_trip_id['latitude'], 'bo-')
 
-        if stop_sequences is not None:
-            stop_sequences_this_shape_id = stop_sequences[stop_sequences['shape_id'] == shape_id]
+        if stops is not None:
+            stops_this_shape_id = stops[stops['shape_id'] == shape_id]
             plt.subplot(1, 2, 1)
-            for postmile in stop_sequences_this_shape_id['shape_dist_traveled']:
+            for postmile in stops_this_shape_id['shape_dist_traveled']:
                 plt.axhline(y=postmile, linestyle=":")
             plt.subplot(1, 2, 2)
-            plt.plot(stop_sequences_this_shape_id['stop_lon'], stop_sequences_this_shape_id['stop_lat'], 'rs')
+            plt.plot(stops_this_shape_id['stop_lon'], stops_this_shape_id['stop_lat'], 'rs')
 
     plt.show()
 
 
-def load_proj_location_data(starttime_ms, number_of_days):
+def load_proj_locations_data(starttime_ms, number_of_days):
     """
     Load projected location data and check input
     """
-    proj_location_filename = construct_filename(datatype="proj_location",
+    proj_locations_filename = construct_filename(datatype="proj_locations",
                                                 starttime_ms=starttime_ms, number_of_days=number_of_days)
-    proj_locations = pd.read_csv(proj_location_filename)
-    print "Total number of rows: {}".format(len(proj_locations))
+    proj_locations = pd.read_csv(proj_locations_filename)
+    print "Total number of proj_locations: {}".format(len(proj_locations))
 
     # Input check: eliminate duplication in data (only using columns time and trip_id)
     if proj_locations.duplicated(['time', 'trip_id']).any():
         proj_locations.drop_duplicates(['time', 'trip_id'], inplace=True)
-        print "Duplicates removed, now {} rows".format(len(proj_locations))
+        print "Duplicates in proj_locations removed, now {} rows".format(len(proj_locations))
 
     return proj_locations
 
@@ -77,30 +77,30 @@ def match_location_pairs(proj_locations):
     return matched_locations
 
 
-def load_stop_sequence_data(starttime_ms):
+def load_stops_data(starttime_ms):
     """
     Get postmiles of stops sorted by shape_id
     """
-    stop_sequence_filename = construct_filename(datatype="stop_sequence", starttime_ms=starttime_ms)
-    stop_sequences = pd.read_csv(stop_sequence_filename)
-    print "Total number of rows: {}".format(len(stop_sequences))
+    stops_filename = construct_filename(datatype="stops", starttime_ms=starttime_ms)
+    stops = pd.read_csv(stops_filename)
+    print "Total number of sequenced stops: {}".format(len(stops))
 
     # input check
-    unique_shape_id = stop_sequences['shape_id'].unique()
+    unique_shape_id = stops['shape_id'].unique()
     for shape_id in unique_shape_id:
-        stop_sequences_this_shape_id = stop_sequences[stop_sequences['shape_id'] == shape_id]
-        if (stop_sequences_this_shape_id['stop_sequence'].diff() < 0).any():
+        stops_this_shape_id = stops[stops['shape_id'] == shape_id]
+        if (stops_this_shape_id['stop_sequence'].diff() < 0).any():
             print "Stop sequences of shape {} are not in order!".format(shape_id)
-        if (stop_sequences_this_shape_id['shape_dist_traveled'].diff() < 0).any():
+        if (stops_this_shape_id['shape_dist_traveled'].diff() < 0).any():
             print "Stop postmiles of shape {} are not in order!".format(shape_id)
 
-    return stop_sequences
+    return stops
 
 
-def load_event_data(starttime_ms, number_of_days):
-    event_filename = construct_filename(datatype="event", starttime_ms=starttime_ms, number_of_days=number_of_days)
-    events = pd.read_csv(event_filename)
-    print "Total number of rows: {}".format(len(events))
+def load_events_data(starttime_ms, number_of_days):
+    events_filename = construct_filename(datatype="events", starttime_ms=starttime_ms, number_of_days=number_of_days)
+    events = pd.read_csv(events_filename)
+    print "Total number of events: {}".format(len(events))
 
     # input check
     unique_trip_id = events['trip_id'].unique()
@@ -122,14 +122,14 @@ if __name__ == "__main__":
     number_of_days = 1
     starttime_ms = 1404079200000
 
-    proj_locations = load_proj_location_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
+    proj_locations = load_proj_locations_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
     # matched_locations = match_location_pairs(proj_locations)
 
-    stop_sequences = load_stop_sequence_data(starttime_ms=starttime_ms)
+    stops = load_stops_data(starttime_ms=starttime_ms)
 
-    events = load_event_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
+    events = load_events_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
 
-    # plot_by_shape_id(proj_locations=proj_locations, stop_sequences=stop_sequences)
+    # plot_by_shape_id(proj_locations=proj_locations, stops=stops)
 
 
     # Training (with training data)
@@ -151,19 +151,14 @@ if __name__ == "__main__":
         location_postmile = proj_locations.ix[location_index, 'postmile']
 
         # Find all stops of the same shape_id and larger postmile
-        selected_stop_index = (stop_sequences['shape_id'] == location_shape_id) & \
-                     (stop_sequences['shape_dist_traveled'] >= location_postmile)
+        selected_stop_index = (stops['shape_id'] == location_shape_id) & \
+                              (stops['shape_dist_traveled'] >= location_postmile)
         # TODO: rename stop_sequences to stops or sequenced_stops
-        selected_stop_sequences = stop_sequences[selected_stop_index]
+        selected_stop_sequences = stops[selected_stop_index]
 
         # for each selected stop, predict arrival time
         for stop_index in range(len(selected_stop_sequences)):
             # TODO: query DB for arrival time (in local time with no date) and adjust to epoch time
-            # SELECT arrival_time, stop_id, stop_sequence
-            # FROM gtfs_stop_times_history
-            # WHERE trip_id = '06140005000107090401'
-            # and t_range @> to_timestamp('1404079200')
-            # --and stop_id = '240'
             # TODO: then plus the delay to get predicted arrival time
             # TODO: need to understand the sign of delay (+ for late and - for early?)
             pass
