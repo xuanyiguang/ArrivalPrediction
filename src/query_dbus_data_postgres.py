@@ -82,7 +82,7 @@ def construct_query_proj_locations(starttime_ms, number_of_days):
 
 def construct_query_stops(starttime_ms):
     """
-    Construct query string for DBus stop sequence data
+    Construct query string for DBus stops data
     given start time (in milliseconds)
     """
     query_string = "SELECT DISTINCT t.shape_id, st.stop_id, st.stop_sequence, st.shape_dist_traveled, " \
@@ -116,6 +116,19 @@ def construct_query_events(starttime_ms, number_of_days):
     return query_string
 
 
+def construct_query_stop_times(starttime_ms):
+    """
+    Construct query string for DBus stop times data
+    given start time (in milliseconds)
+    """
+    query_string = "SELECT trip_id, stop_id, stop_sequence, arrival_time " \
+                   "FROM gtfs_stop_times_history " \
+                   "WHERE t_range @> to_timestamp('{starttime_s}') " \
+                   "ORDER BY trip_id, stop_sequence " \
+                   .format(starttime_s=starttime_ms/1000)
+    return query_string
+
+
 def construct_filename(datatype, starttime_ms=1404079200000, number_of_days=35):
     """
     Unified file naming
@@ -124,7 +137,7 @@ def construct_filename(datatype, starttime_ms=1404079200000, number_of_days=35):
     if datatype == "proj_locations" or datatype == "events":
         return "{pathname}dbus_{datatype}_{starttime_s}_{days}days.csv"\
             .format(pathname=pathname, datatype=datatype, starttime_s=starttime_ms/1000, days=number_of_days)
-    elif datatype == "stops":
+    elif datatype == "stops" or datatype == "stop_times":
         return "{pathname}dbus_{datatype}_{starttime_s}.csv"\
             .format(pathname=pathname, datatype=datatype, starttime_s=starttime_ms/1000)
 
@@ -135,7 +148,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Query Dbus data from postgres")
     parser.add_argument("-u", "--username", dest="username", help="Username for DB", required=True)
     parser.add_argument("-p", "--password", dest="password", help="Password for DB", required=True)
-    parser.add_argument("-t", "--datatype", choices=["proj_locations", "stops", "events"],
+    parser.add_argument("-t", "--datatype", choices=["proj_locations", "stops", "events", "stop_times"],
                         help="The type of data to download")
     parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=1)
     parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
@@ -156,6 +169,8 @@ if __name__ == "__main__":
             query_string = construct_query_stops(starttime_ms=starttime_ms)
         elif args.datatype == "events":
             query_string = construct_query_events(starttime_ms=starttime_ms, number_of_days=number_of_days)
+        elif args.datatype == "stop_times":
+            query_string = construct_query_stop_times(starttime_ms=starttime_ms)
         else:
             print "Should not happen because of argument parser setting"
 
