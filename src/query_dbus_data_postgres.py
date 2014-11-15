@@ -48,14 +48,20 @@ def prompt_for_yes_no(message, default="no"):
 
 
 def file_does_not_exist(filename):
+    """
+    Return True if file does not exist, False if file exists
+    """
     return not os.path.isfile(filename)
 
 
 def overwrite_file(filename):
+    """
+    Return True if user indicate to overwrite the existing file, False otherwise
+    """
     return prompt_for_yes_no("File {} already exists. Overwrite?".format(filename))
 
 
-def construct_query_proj_location(starttime_ms, number_of_days):
+def construct_query_proj_locations(starttime_ms, number_of_days):
     """
     Construct query string for DBus projected location data
     given start time (in milliseconds) and number of days
@@ -74,7 +80,7 @@ def construct_query_proj_location(starttime_ms, number_of_days):
     return query_string
 
 
-def construct_query_stop_sequence(starttime_ms):
+def construct_query_stops(starttime_ms):
     """
     Construct query string for DBus stop sequence data
     given start time (in milliseconds)
@@ -92,7 +98,7 @@ def construct_query_stop_sequence(starttime_ms):
     return query_string
 
 
-def construct_query_event(starttime_ms, number_of_days):
+def construct_query_events(starttime_ms, number_of_days):
     """
     Construct query string for DBus event data
     given start time (in milliseconds) and number of days
@@ -115,10 +121,10 @@ def construct_filename(datatype, starttime_ms=1404079200000, number_of_days=35):
     Unified file naming
     """
     pathname = "../dbusdata/"
-    if datatype == "proj_location" or datatype == "event":
+    if datatype == "proj_locations" or datatype == "events":
         return "{pathname}dbus_{datatype}_{starttime_s}_{days}days.csv"\
             .format(pathname=pathname, datatype=datatype, starttime_s=starttime_ms/1000, days=number_of_days)
-    elif datatype == "stop_sequence":
+    elif datatype == "stops":
         return "{pathname}dbus_{datatype}_{starttime_s}.csv"\
             .format(pathname=pathname, datatype=datatype, starttime_s=starttime_ms/1000)
 
@@ -129,9 +135,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Query Dbus data from postgres")
     parser.add_argument("-u", "--username", dest="username", help="Username for DB", required=True)
     parser.add_argument("-p", "--password", dest="password", help="Password for DB", required=True)
-    parser.add_argument("-t", "--datatype", choices=["proj_location", "stop_sequence", "event"], type=str,
+    parser.add_argument("-t", "--datatype", choices=["proj_locations", "stops", "events"],
                         help="The type of data to download")
-    parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=35)
+    parser.add_argument("-d", "--days", dest="days", type=int, help="Number of days to download", default=1)
     parser.add_argument("-st", "--starttime", dest="starttime_ms", type=long,
                         help="Epoch time (milliseconds) to start from", default=1404079200000)
     # default epoch time 1404079200000 (ms) ==> 6/30/2014 Monday 12am (GMT+2)
@@ -144,12 +150,12 @@ if __name__ == "__main__":
 
     if file_does_not_exist(csv_filename) or overwrite_file(csv_filename):
         # prepare query_string
-        if args.datatype == "proj_location":
-            query_string = construct_query_proj_location(starttime_ms=starttime_ms, number_of_days=number_of_days)
-        elif args.datatype == "stop_sequence":
-            query_string = construct_query_stop_sequence(starttime_ms=starttime_ms)
-        elif args.datatype == "event":
-            query_string = construct_query_event(starttime_ms=starttime_ms, number_of_days=number_of_days)
+        if args.datatype == "proj_locations":
+            query_string = construct_query_proj_locations(starttime_ms=starttime_ms, number_of_days=number_of_days)
+        elif args.datatype == "stops":
+            query_string = construct_query_stops(starttime_ms=starttime_ms)
+        elif args.datatype == "events":
+            query_string = construct_query_events(starttime_ms=starttime_ms, number_of_days=number_of_days)
         else:
             print "Should not happen because of argument parser setting"
 
