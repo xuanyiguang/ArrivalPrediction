@@ -79,7 +79,7 @@ def match_location_pairs(proj_locations):
 
 def load_stops_data(starttime_ms):
     """
-    Get postmiles of stops sorted by shape_id
+    Get sequence and postmile of stops sorted by shape_id
     """
     stops_filename = construct_filename(datatype="stops", starttime_ms=starttime_ms)
     stops = pd.read_csv(stops_filename)
@@ -118,6 +118,15 @@ def load_events_data(starttime_ms, number_of_days):
     return events
 
 
+def load_stop_times_data(starttime_ms):
+    """
+    Get arrival time at stops (in local time) sorted by trip_id
+    """
+    stops_filename = construct_filename(datatype="stop_times", starttime_ms=starttime_ms)
+    stops = pd.read_csv(stops_filename)
+    print "Total number of sequenced stops: {}".format(len(stops))
+
+
 if __name__ == "__main__":
     number_of_days = 1
     starttime_ms = 1404079200000
@@ -128,6 +137,8 @@ if __name__ == "__main__":
     stops = load_stops_data(starttime_ms=starttime_ms)
 
     events = load_events_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
+
+    stop_times = load_stop_times_data(starttime_ms=starttime_ms)
 
     # plot_by_shape_id(proj_locations=proj_locations, stops=stops)
 
