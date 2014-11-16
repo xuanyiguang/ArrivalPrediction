@@ -130,7 +130,7 @@ def load_stop_times_data(starttime_ms):
 
 
 if __name__ == "__main__":
-    number_of_days = 1
+    number_of_days = 7
     starttime_ms = 1404079200000
 
     proj_locations = load_proj_locations_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     events = load_events_data(starttime_ms=starttime_ms, number_of_days=number_of_days)
 
-    stop_times = load_stop_times_data(starttime_ms=starttime_ms)
+    # stop_times = load_stop_times_data(starttime_ms=starttime_ms)
 
     # plot_by_shape_id(proj_locations=proj_locations, stops=stops)
 
@@ -160,18 +160,27 @@ if __name__ == "__main__":
 
     # for each new location that becomes available, do prediction
     for location_index in range(len(proj_locations)):
-        location_shape_id = proj_locations.ix[location_index, 'shape_id']
-        location_postmile = proj_locations.ix[location_index, 'postmile']
+        proj_location = proj_locations.iloc[location_index]
 
         # Find all stops of the same shape_id and larger postmile
-        selected_stop_index = (stops['shape_id'] == location_shape_id) & \
-                              (stops['shape_dist_traveled'] >= location_postmile)
-        # TODO: rename stop_sequences to stops or sequenced_stops
-        selected_stop_sequences = stops[selected_stop_index]
+        selected_stops_index = (stops['shape_id'] == proj_location['shape_id']) & \
+                               (stops['shape_dist_traveled'] >= proj_location['postmile'])
+        selected_stops = stops[selected_stops_index]
 
-        # for each selected stop, predict arrival time
-        for stop_index in range(len(selected_stop_sequences)):
+        # for each selected stop
+        for selected_stop_index in range(len(selected_stops)):
+            selected_stop = selected_stops.iloc[selected_stop_index]
+
+            # predict arrival time at the selected stop
             # TODO: query DB for arrival time (in local time with no date) and adjust to epoch time
             # TODO: then plus the delay to get predicted arrival time
             # TODO: need to understand the sign of delay (+ for late and - for early?)
-            pass
+
+            # get ground truth arrival time for the selected stop
+            events_index = (events['trip_id'] == proj_location['trip_id']) & \
+                           (events['stop_id'] == selected_stop['stop_id']) & \
+                           (events['time'] >= proj_location['time']) & \
+                           (events['type'] == 0)
+            if len(events[events_index]) != 1:
+                # It's OK that nothing is found
+                print "Trip: {}, Stop: {}, Len: {}".format(proj_location['trip_id'], selected_stop['stop_id'], len(events[events_index]))
